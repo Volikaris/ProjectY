@@ -1,5 +1,5 @@
 //var mongojs = require("mongojs");
-var db = null;//mongojs('localhost:27017/myGame', ['acc','progress']);
+var db = null;//mongojs('localhost:27017/myGame', ['account','progress']);
 
 var express = require('express');
 var app = express();
@@ -15,14 +15,26 @@ console.log("Server started.");
 
 var SOCKET_LIST = {};
 
-var Entity = function(){
+var Entity = function(param){
 	var self = {
 		x:250,
 		y:250,
 		spdX:0,
 		spdY:0,
 		id:"",
+		map:'forest',
 	}
+	if(param){
+		if(param.x)
+			self.x = param.x;
+		if(param.y)
+			self.y = param.y;
+		if(param.map)
+			self.map = param.map;
+		if(param.id)
+			self.id = param.id;		
+	}
+	
 	self.update = function(){
 		self.updatePosition();
 	}
@@ -36,9 +48,8 @@ var Entity = function(){
 	return self;
 }
 
-var Player = function(id){
-	var self = Entity();
-	self.id = id;
+var Player = function(param){
+	var self = Entity(param);
 	self.number = "" + Math.floor(10 * Math.random());
 	self.pressingRight = false;
 	self.pressingLeft = false;
@@ -54,6 +65,7 @@ var Player = function(id){
 	var super_update = self.update;
 	self.update = function(){
 		self.updateSpd();
+		
 		super_update();
 		
 		if(self.pressingAttack){
@@ -61,9 +73,13 @@ var Player = function(id){
 		}
 	}
 	self.shootBullet = function(angle){
-		var b = Bullet(self.id,angle);
-		b.x = self.x;
-		b.y = self.y;
+		Bullet({
+			parent:self.id,
+			angle:angle,
+			x:self.x,
+			y:self.y,
+			map:self.map,
+		});
 	}
 	
 	self.updateSpd = function(){
@@ -91,6 +107,7 @@ var Player = function(id){
 			hp:self.hp,
 			hpMax:self.hpMax,
 			score:self.score,
+			map:self.map,
 		};		
 	}
 	self.getUpdatePack = function(){
@@ -100,17 +117,26 @@ var Player = function(id){
 			y:self.y,
 			hp:self.hp,
 			score:self.score,
+			map:self.map,
 		}	
 	}
 	
-	Player.list[id] = self;
+	Player.list[self.id] = self;
 	
 	initPack.player.push(self.getInitPack());
 	return self;
 }
 Player.list = {};
 Player.onConnect = function(socket){
-	var player = Player(socket.id);
+	var map = 'forest';
+	if(Math.random() < 0.5)
+		map = 'field';
+	var player = Player({
+		id:socket.id,
+		map:map,
+	});
+
+	/////----- ODBIÓR KLAWISZY
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
 			player.pressingLeft = data.state;
@@ -126,6 +152,19 @@ Player.onConnect = function(socket){
 			player.mouseAngle = data.state;
 	});
 	
+	/////----- ODBIÓR ZMIANY MAPY
+	socket.on('changeMap',function(data){
+		if(player.map === 'field')
+			player.map = 'forest';
+		else
+			player.map = 'field';
+	});
+	/////----- ODBIÓR WYLOGOWANIA
+	socket.on('logout', function(){
+		player.onDisconnect(socket);
+	});
+	
+	/////----- WYSYŁ PAKIETU STARTOWEGO
 	socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
@@ -154,12 +193,14 @@ Player.update = function(){
 }
 
 
-var Bullet = function(parent,angle){
-	var self = Entity();
+var Bullet = function(param){
+	var self = Entity(param);
 	self.id = Math.random();
-	self.spdX = Math.cos(angle/180*Math.PI) * 10;
-	self.spdY = Math.sin(angle/180*Math.PI) * 10;
-	self.parent = parent;
+	self.angle = param.angle;
+	self.spdX = Math.cos(param.angle/180*Math.PI) * 10;
+	self.spdY = Math.sin(param.angle/180*Math.PI) * 10;
+	self.parent = param.parent;
+	
 	self.timer = 0;
 	self.toRemove = false;
 	var super_update = self.update;
@@ -170,7 +211,7 @@ var Bullet = function(parent,angle){
 		
 		for(var i in Player.list){
 			var p = Player.list[i];
-			if(self.getDistance(p) < 32 && self.parent !== p.id){
+			if(self.map === p.map && self.getDistance(p) < 32 && self.parent !== p.id){
 				p.hp -= 1;
 								
 				if(p.hp <= 0){
@@ -189,7 +230,8 @@ var Bullet = function(parent,angle){
 		return {
 			id:self.id,
 			x:self.x,
-			y:self.y,		
+			y:self.y,
+			map:self.map,
 		};
 	}
 	self.getUpdatePack = function(){
@@ -231,7 +273,7 @@ var DEBUG = true;
 
 var isValidPassword = function(data,cb){
 	return cb(true);
-	/*db.acc.find({username:data.username,password:data.password},function(err,res){
+	/*db.account.find({username:data.username,password:data.password},function(err,res){
 		if(res.length > 0)
 			cb(true);
 		else
@@ -240,7 +282,7 @@ var isValidPassword = function(data,cb){
 }
 var isUsernameTaken = function(data,cb){
 	return cb(false);
-	/*db.acc.find({username:data.username},function(err,res){
+	/*db.account.find({username:data.username},function(err,res){
 		if(res.length > 0)
 			cb(true);
 		else
@@ -249,7 +291,7 @@ var isUsernameTaken = function(data,cb){
 }
 var addUser = function(data,cb){
 	return cb();
-	/*db.acc.insert({username:data.username,password:data.password},function(err){
+	/*db.account.insert({username:data.username,password:data.password},function(err){
 		cb();
 	});*/
 }
@@ -327,8 +369,23 @@ setInterval(function(){
 	
 },1000/25);
 
-
-
+/*
+var profiler = require('v8-profiler');
+var fs = require('fs');
+var startProfiling = function(duration){
+	profiler.startProfiling('1', true);
+	setTimeout(function(){
+		var profile1 = profiler.stopProfiling('1');
+		
+		profile1.export(function(error, result) {
+			fs.writeFile('./profile.cpuprofile', result);
+			profile1.delete();
+			console.log("Profile saved.");
+		});
+	},duration);	
+}
+startProfiling(10000);
+*/
 
 
 
