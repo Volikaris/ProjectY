@@ -96,9 +96,10 @@
 		socket.emit('changeMap');
 	}
 	var logout = function(){
-		socket.emit('logout', self.id);
+		socket.emit('logout');
 		gameDiv.style.display = 'none';
 		signDiv.style.display = 'inline-block';
+
 	}
 	
 	
@@ -262,6 +263,7 @@
 		if(lastScore === Player.list[selfId].score)
 			return;
 		lastScore = Player.list[selfId].score;
+		ctxUi.clearRect(0,0,500,500);
 		ctxUi.fillStyle = 'white';
 		ctxUi.fillText(Player.list[selfId].score,0,30);
 	}
