@@ -6,23 +6,23 @@
 </div>
 
 <div id="gameDiv" style="display:none;">
-	<div id="game" style="position:absolute;width:1900px;height:800px">
-		<canvas id="ctx" width="1900" height="800" style="position:absolute;border:1px solid #000000;"></canvas>
-		<canvas id="ctx-ui" width="1900" height="800" style="position:absolute;border:1px solid #000000;"></canvas>
+	<div id="game" style="position:absolute;">
+		<canvas id="ctx" style="position:absolute;border:1px solid #000000;"></canvas>
+		<canvas id="ctx-ui" style="position:absolute;border:0px solid #000000;"></canvas>
 
-		<div id="ui" style="position:absolute;width:1900px;height:800px;">
-			<button onclick="changeMap()" style="position:absolute;bottom:0px;left:3px">
+		
+	</div>
+	<div id="ui" style="position:absolute;bottom:0px;left:500px">
+			<button onclick="changeMap()" style="position:absolute;bottom:160px;left:25px;width:100px">
 				Change Map
 			</button>
-			<button onclick="logout()" style="position:absolute;bottom:0px;left:100px">
+			<button onclick="logout()" style="position:absolute;bottom:160px;left:140px;width:100px">
 				Log out
 			</button>
 		</div>
-		
-	</div>
 	
-	<div id="belowGame" style="margin-top:820px">	
-		<div id="chat-text" style="width:500px;height:100px;overflow-y:scroll">
+	<div id="belowGame" style="position:absolute;bottom:0px;">	
+		<div id="chat-text" style="width:500px;height:150px;overflow-y:scroll">
 			<div>Hello!</div>
 		</div>
 
@@ -37,12 +37,21 @@
 <!--<script src="/client/socket.js"></script>-->
 
 <script>
+
 	// 
 	var WIDTH = 1900;
 	var HEIGHT = 800;
 	var socket = io();
 	
+		   window.addEventListener('resize', resizeCanvas, false);
+        var canvas = document.getElementById('ctx');
+        function resizeCanvas() {
+                canvas.width = window.innerWidth-30;
+                canvas.height = window.innerHeight-200; 
+        }
+        resizeCanvas();
 	//sign
+	var signDiv = document.getElementById('signDiv');
 	var signDiv = document.getElementById('signDiv');
 	var signDivUsername = document.getElementById('signDiv-username');
 	var signDivSignIn = document.getElementById('signDiv-signIn');
@@ -240,12 +249,13 @@
 		}
 	});
 	
+	//petla
 	setInterval(function(){
 		if(!selfId)
 			return;
-		ctx.clearRect(0,0,1900,800);
+		ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
 		ctx.fillStyle = 'black';
-		ctx.fillRect(0,0,1900,800);
+		ctx.fillRect(0,0,window.innerWidth,window.innerHeight);
 		drawMap();
 		drawScore();
 		for(var i in Player.list)
@@ -274,7 +284,7 @@
 		if(lastScore === Player.list[selfId].score)
 			return;
 		lastScore = Player.list[selfId].score;
-		ctxUi.clearRect(0,0,1900,800);
+		ctxUi.clearRect(0,0,window.innerWidth,window.innerHeight);
 		ctxUi.fillStyle = 'white';
 		ctxUi.strokeStyle = 'black';
 		ctxUi.lineWidth = 1;
@@ -323,8 +333,4 @@
 	
 	
 </script>
-
-
-
-
 
