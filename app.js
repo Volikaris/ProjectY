@@ -83,16 +83,16 @@ var Player = function(param){
 	}
 	
 	self.updateSpd = function(){
-		if(self.pressingRight)
+		if(self.pressingRight && self.x < 1280)
 			self.spdX = self.maxSpd;
-		else if(self.pressingLeft)
+		else if(self.pressingLeft && self.x > -640)
 			self.spdX = -self.maxSpd;
 		else
 			self.spdX = 0;
 		
-		if(self.pressingUp)
+		if(self.pressingUp && self.y > -480)
 			self.spdY = -self.maxSpd;
-		else if(self.pressingDown)
+		else if(self.pressingDown && self.y < 960)
 			self.spdY = self.maxSpd;
 		else
 			self.spdY = 0;		
@@ -161,7 +161,8 @@ Player.onConnect = function(socket){
 	});
 	/////----- ODBIÓR WYLOGOWANIA
 	socket.on('logout', function(){
-		player.onDisconnect(socket);
+		delete SOCKET_LIST[socket.id];
+		Player.onDisconnect(socket);
 	});
 	
 	/////----- WYSYŁ PAKIETU STARTOWEGO
@@ -212,7 +213,7 @@ var Bullet = function(param){
 		for(var i in Player.list){
 			var p = Player.list[i];
 			if(self.map === p.map && self.getDistance(p) < 32 && self.parent !== p.id){
-				p.hp -= 1;
+					p.hp -= 1;
 								
 				if(p.hp <= 0){
 					var shooter = Player.list[self.parent];
