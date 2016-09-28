@@ -23,6 +23,7 @@ var Entity = function(param){
 		spdY:0,
 		id:"",
 		map:'forest',
+		name:"",
 	}
 	if(param){
 		if(param.x)
@@ -56,11 +57,13 @@ var Player = function(param){
 	self.pressingUp = false;
 	self.pressingDown = false;
 	self.pressingAttack = false;
+	self.pressingShift = false;
 	self.mouseAngle = 0;
-	self.maxSpd = 10;
+	self.maxSpd = 5;
 	self.hp = 10;
 	self.hpMax = 10;
 	self.score = 0;
+	self.name = "";
 	
 	var super_update = self.update;
 	self.update = function(){
@@ -83,19 +86,17 @@ var Player = function(param){
 	}
 	
 	self.updateSpd = function(){
-		if(self.pressingRight && self.x < 1280)
-			self.spdX = self.maxSpd;
-		else if(self.pressingLeft && self.x > -640)
-			self.spdX = -self.maxSpd;
-		else
-			self.spdX = 0;
+		if(self.pressingRight && self.x < 1280) { self.spdX = self.maxSpd; }
+		else if(self.pressingLeft && self.x > -640) {self.spdX = -self.maxSpd; }
+		else {self.spdX = 0; }
 		
-		if(self.pressingUp && self.y > -480)
-			self.spdY = -self.maxSpd;
-		else if(self.pressingDown && self.y < 960)
-			self.spdY = self.maxSpd;
-		else
-			self.spdY = 0;		
+		if(self.pressingUp && self.y > -480) {self.spdY = -self.maxSpd; }
+		else if(self.pressingDown && self.y < 960) {self.spdY = self.maxSpd; }
+		else {self.spdY = 0; }	
+
+		if(self.pressingShift && sprinting == false) {sprinting = true;}
+		if(!self.pressingShift) sprinting = false;
+		if(sprinting) self.maxSpd = 10; else self.maxSpd = 5;
 	}
 	
 	self.getInitPack = function(){
@@ -108,6 +109,7 @@ var Player = function(param){
 			hpMax:self.hpMax,
 			score:self.score,
 			map:self.map,
+			name:self.name,
 		};		
 	}
 	self.getUpdatePack = function(){
@@ -150,6 +152,8 @@ Player.onConnect = function(socket){
 			player.pressingAttack = data.state;
 		else if(data.inputId === 'mouseAngle')
 			player.mouseAngle = data.state;
+		else if(data.inputId === 'shift')
+			player.pressingShift = data.state;
 	});
 	
 	/////----- ODBIÓR ZMIANY MAPY
@@ -296,6 +300,15 @@ var addUser = function(data,cb){
 		cb();
 	});*/
 }
+var isNicknameTaken = function(data,cb){
+	return cb(false);
+	/*db.account.find({nickname:data.nickname},function(err,res){
+		if(res.length > 0)
+			cb(true);
+		else
+			cb(false);
+	});*/
+}
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
@@ -330,7 +343,9 @@ io.sockets.on('connection', function(socket){
 		Player.onDisconnect(socket);
 	});
 	socket.on('sendMsgToServer',function(data){
-		var playerName = ("" + socket.id).slice(2,7);
+		if(Player.name != null){
+		var playerName = ("Test " + Player.name);
+		} else var playerName = ("" + socket.id).slice(2,7);
 		for(var i in SOCKET_LIST){
 			SOCKET_LIST[i].emit('addToChat',playerName + ': ' + data);
 		}
