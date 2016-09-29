@@ -1,5 +1,5 @@
-//var mongojs = require("mongojs");
-var db = null;//mongojs('localhost:27017/myGame', ['account','progress']);
+var mongojs = require("mongojs");
+var db = mongojs('localhost:27017/myGame', ['account','progress','nickname']);
 
 var express = require('express');
 var app = express();
@@ -33,7 +33,9 @@ var Entity = function(param){
 		if(param.map)
 			self.map = param.map;
 		if(param.id)
-			self.id = param.id;		
+			self.id = param.id;	
+		if(param.name)
+			self.name = param.name;
 	}
 	
 	self.update = function(){
@@ -51,7 +53,6 @@ var Entity = function(param){
 
 var Player = function(param){
 	var self = Entity(param);
-	self.number = "" + Math.floor(10 * Math.random());
 	self.pressingRight = false;
 	self.pressingLeft = false;
 	self.pressingUp = false;
@@ -63,7 +64,6 @@ var Player = function(param){
 	self.hp = 10;
 	self.hpMax = 10;
 	self.score = 0;
-	self.name = "";
 	
 	var super_update = self.update;
 	self.update = function(){
@@ -103,8 +103,7 @@ var Player = function(param){
 		return {
 			id:self.id,
 			x:self.x,
-			y:self.y,	
-			number:self.number,	
+			y:self.y,
 			hp:self.hp,
 			hpMax:self.hpMax,
 			score:self.score,
@@ -120,6 +119,7 @@ var Player = function(param){
 			hp:self.hp,
 			score:self.score,
 			map:self.map,
+			name:self.name,
 		}	
 	}
 	
@@ -276,40 +276,42 @@ Bullet.getAllInitPack = function(){
 
 var DEBUG = true;
 
+///////////////////////////////////////////////
+/////----- OBSŁUGA BAZY DANYCH -------/////////
+///////////////////////////////////////////////
 var isValidPassword = function(data,cb){
-	return cb(true);
-	/*db.account.find({username:data.username,password:data.password},function(err,res){
+	//return cb(true);
+	db.account.find({username:data.username,password:data.password},function(err,res){
 		if(res.length > 0)
 			cb(true);
 		else
 			cb(false);
-	});*/
+	});
 }
 var isUsernameTaken = function(data,cb){
-	return cb(false);
-	/*db.account.find({username:data.username},function(err,res){
+	//return cb(false);
+	db.account.find({username:data.username},function(err,res){
 		if(res.length > 0)
 			cb(true);
 		else
 			cb(false);
-	});*/
+	});
 }
 var addUser = function(data,cb){
-	return cb();
-	/*db.account.insert({username:data.username,password:data.password},function(err){
+	//return cb();
+	db.account.insert({username:data.username,password:data.password,nickname:data.nickname},function(err){
 		cb();
-	});*/
+	});
 }
 var isNicknameTaken = function(data,cb){
-	return cb(false);
-	/*db.account.find({nickname:data.nickname},function(err,res){
+	//return cb(false);
+	db.account.find({nickname:data.nickname},function(err,res){
 		if(res.length > 0)
 			cb(true);
 		else
 			cb(false);
-	});*/
+	});
 }
-
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
 	socket.id = Math.random();
@@ -327,6 +329,7 @@ io.sockets.on('connection', function(socket){
 	});
 	socket.on('signUp',function(data){
 		isUsernameTaken(data,function(res){
+			isNicknameTaken(data,function(res){
 			if(res){
 				socket.emit('signUpResponse',{success:false});		
 			} else {
@@ -334,6 +337,7 @@ io.sockets.on('connection', function(socket){
 					socket.emit('signUpResponse',{success:true});					
 				});
 			}
+			});
 		});		
 	});
 	

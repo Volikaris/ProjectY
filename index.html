@@ -10,7 +10,6 @@
 	<div id="game" style="position:absolute;">
 		<canvas id="ctx" style="position:absolute;border:1px solid #000000;"></canvas>
 		<canvas id="ctx-ui" style="position:absolute;border:0px solid #000000;"></canvas>
-
 		
 	</div>
 	<div id="ui" style="position:absolute;bottom:0px;left:500px">
@@ -39,21 +38,25 @@
 
 <script>
 
-	// 
+	// domyślna wartość "ekranu"
 	var WIDTH = 1900;
 	var HEIGHT = 800;
 	var socket = io();
 	//fullscreen
-		   window.addEventListener('resize', resizeCanvas, false);
-        var canvas = document.getElementById('ctx');
-        function resizeCanvas() {
-                canvas.width = window.innerWidth-30;
-                canvas.height = window.innerHeight-200; 
-				WIDTH = canvas.width;
-				HEIGHT = canvas.height;
-        }
-        resizeCanvas();
-	//sign
+	window.addEventListener('resize', resizeCanvas, false);
+    var canvas = document.getElementById('ctx');
+    function resizeCanvas() {
+        canvas.width = window.innerWidth-30;
+        canvas.height = window.innerHeight-200; 
+		WIDTH = canvas.width;
+		HEIGHT = canvas.height;
+    }
+    resizeCanvas();
+
+	///////////////////////////////////////////////
+	/////----- LOGOWANIE -----------------/////////
+	///////////////////////////////////////////////
+
 	var signDiv = document.getElementById('signDiv');
 	var signDiv = document.getElementById('signDiv');
 	var signDivUsername = document.getElementById('signDiv-username');
@@ -63,7 +66,7 @@
 	var signDivNickname = document.getElementById('signDiv-nickname');
 	
 	signDivSignIn.onclick = function(){
-		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value,nickname:signDivNickname.value});
+		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
 	}
 	signDivSignUp.onclick = function(){
 		socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value,nickname:signDivNickname.value});
@@ -73,16 +76,18 @@
 			signDiv.style.display = 'none';
 			gameDiv.style.display = 'inline-block';
 		} else
-			alert("Sign in unsuccessul.");
+			alert("Sign in unsuccessful.");
 	});
 	socket.on('signUpResponse',function(data){
 		if(data.success){
-			alert("Sign up successul.");
+			alert("Sign up successful.");
 		} else
-			alert("Sign up unsuccessul.");
+			alert("Sign up unsuccessful.");
 	});
 
-	//chat
+	///////////////////////////////////////////////
+	/////----- CHAT ----------------------/////////
+	///////////////////////////////////////////////
 	var chatText = document.getElementById('chat-text');
 	var chatInput = document.getElementById('chat-input');
 	var chatForm = document.getElementById('chat-form');
@@ -104,7 +109,9 @@
 		chatInput.value = '';		
 	}
 	
-	//UI
+	///////////////////////////////////////////////
+	/////----- INTERFEJS -----------------/////////
+	///////////////////////////////////////////////
 	var changeMap = function(){
 		socket.emit('changeMap');
 	}
@@ -116,7 +123,9 @@
 	}
 	
 	
-	//game
+	///////////////////////////////////////////////
+	/////----- GRA -----------------------/////////
+	///////////////////////////////////////////////
 	var Img = {};
 	Img.player = new Image();
 	Img.player.src = '/client/img/player.png';
@@ -133,17 +142,19 @@
 	var ctxUi = document.getElementById("ctx-ui").getContext("2d");
 	ctxUi.font = '30px Arial';
 	
+	///////////////////////////////////////////////
+	/////----- GRACZ ---------------------/////////
+	///////////////////////////////////////////////
 	var Player = function(initPack){
 		var self = {};
 		self.id = initPack.id;
-		self.number = initPack.number;
 		self.x = initPack.x;
 		self.y = initPack.y;
 		self.hp = initPack.hp;
 		self.hpMax = initPack.hpMax;
 		self.score = initPack.score;
 		self.map = initPack.map;
-		self.name = initPack.name;
+		self.name = initPack.name + "test";
 		
 		self.draw = function(){	
 			if(Player.list[selfId].map !== self.map)
@@ -164,8 +175,11 @@
 				x-width/2,y-height/2,width,height);
 			
 			ctx.fillStyle = 'black';
-			ctx.font = '15px Arial';
-			ctx.fillText(self.name,x,y-40);
+			ctx.strokeStyle = 'black';
+			ctx.lineWidth = '1.5';
+			ctx.font = '20px Arial';
+			ctx.fillText(Player.list[selfId].name,x-25,y-35);
+			ctx.strokeText(Player.list[selfId].name,x-25,y-35);
 		}
 		
 		Player.list[self.id] = self;
@@ -175,7 +189,9 @@
 	}
 	Player.list = {};
 
-		
+	///////////////////////////////////////////////
+	/////----- POCISK --------------------/////////
+	///////////////////////////////////////////////	
 	var Bullet = function(initPack){
 		var self = {};
 		self.id = initPack.id;
@@ -256,7 +272,9 @@
 		}
 	});
 	
-	//petla
+	///////////////////////////////////////////////
+	/////----- PETLA ---------------------/////////
+	///////////////////////////////////////////////
 	setInterval(function(){
 		if(!selfId)
 			return;
@@ -286,7 +304,9 @@
 		ctx.drawImage(Img.map[player.map],x-640,y-480);
 		ctx.drawImage(Img.map[player.map],x-640,y+480);
 	}
-	/////----- rysowanie UI
+	///////////////////////////////////////////////
+	/////----- RYSOWANIE UI --------------/////////
+	///////////////////////////////////////////////
 		var drawScore = function(){
 		if(lastScore === Player.list[selfId].score)
 			return;
@@ -301,6 +321,9 @@
 	}
 	var lastScore = null;
 	
+	///////////////////////////////////////////////
+	/////----- STEROWANIE ----------------/////////
+	///////////////////////////////////////////////
 	document.onkeydown = function(event){
 		if(event.keyCode === 68)	//d
 			socket.emit('keyPress',{inputId:'right',state:true});
@@ -333,8 +356,8 @@
 		socket.emit('keyPress',{inputId:'attack',state:false});
 	}
 	document.onmousemove = function(event){
-		var x = -950 + event.clientX - 8;
-		var y = -400 + event.clientY - 8;
+		var x = -canvas.width/2 + event.clientX - 8;
+		var y = -canvas.height/2 + event.clientY - 8;
 		var angle = Math.atan2(y,x) / Math.PI * 180;
 		socket.emit('keyPress',{inputId:'mouseAngle',state:angle});
 	}
